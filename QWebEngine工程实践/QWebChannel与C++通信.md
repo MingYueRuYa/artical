@@ -22,7 +22,7 @@ C++ QObject ←→ WebChannel Transport (QWebEngine) ←→ JS 对象
 
 实际通信依赖两部分：
 
-### ① **C++ 侧：QObject + QWebChannel**
+### ① C++ 侧：QObject + QWebChannel
 
 - QObject 必须继承自 QObject
 - 想暴露给 JS 的属性/方法必须加 Q_INVOKABLE 或 Q_PROPERTY
@@ -33,7 +33,7 @@ C++ QObject ←→ WebChannel Transport (QWebEngine) ←→ JS 对象
 channel->registerObject("bridge", myBridgeObject);
 ```
 
-### ② **JS 侧：qwebchannel.js**
+### ② JS 侧：qwebchannel.js
 
 网页加载后必须初始化：
 
@@ -59,7 +59,7 @@ bridge.messageChanged.connect(function(msg){
 
 ####  1. C++ 端代码
 
-### **bridge.h**
+##### bridge.h
 
 ```cpp
 #pragma once
@@ -82,7 +82,7 @@ signals:
 };
 ```
 
-### **mainwindow.cpp**
+##### mainwindow.cpp
 
 ```
 #include "mainwindow.h"
@@ -155,14 +155,15 @@ MainWindow::MainWindow(QWidget* parent)
 ```
 
 这个 Demo 能实现：
- ✔ JS 调 C++
- ✔ C++ 调 JS（信号）
- ✔ 异步通信
- ✔ 页面加载自动初始化 WebChannel
+
+- JS 调 C++
+-  C++ 调 JS（信号）
+-  异步通信
+-  页面加载自动初始化 WebChannel
 
 ## 三、QWebChannel 常见问题与避坑指南（非常重要）
 
-### ❗ 1. **JS 侧总是拿不到对象（undefined）**
+### 1. JS 侧总是拿不到对象（undefined）
 
 典型错误：
 
@@ -170,7 +171,7 @@ MainWindow::MainWindow(QWidget* parent)
 console.log(bridge); // undefined
 ```
 
-### ✔ 正确做法：所有 JS 调用必须在 QWebChannel 初始化之后
+### 正确做法：所有 JS 调用必须在 QWebChannel 初始化之后
 
 ```
 new QWebChannel(qt.webChannelTransport, function(channel){
@@ -180,7 +181,7 @@ new QWebChannel(qt.webChannelTransport, function(channel){
 
 ⚠ **不要**在 `window.onload` 或顶层就调用 bridge。
 
-### 2. **跨线程访问导致崩溃（最常见）**
+### 2. 跨线程访问导致崩溃（最常见）
 
 若你把 `Bridge` 放到子线程，会直接崩溃。
 
@@ -200,7 +201,7 @@ Q_INVOKABLE void updateDataFromWorkerThread(const QString& msg) {
 
 Qt 会自动通过 queued connection 切回主线程。
 
-###  3. **页面重新加载后 channel 失效**
+###  3. 页面重新加载后 channel 失效
 
 当你 reload()、load() 新页面后：
  之前的 JS 对象全部失效。
@@ -228,12 +229,12 @@ connect(page, &QWebEnginePage::loadFinished, this, [=](bool ok){
 - JS 回调写在 WebChannel 初始化外部
 - 信号参数为自定义类型但未 qRegisterMetaType
 
-#### ✔ 排查顺序：
+#### 排查顺序：
 
-1. C++ 打印信号是否发出
-2. JS log 是否有回调
-3. 参数类型是否是 QVariant 能转的基本类型
-4. Bridge 是否挂靠在 MainWindow（不要让其随 WebPage 销毁）
+- C++ 打印信号是否发出
+- JS log 是否有回调
+- 参数类型是否是 QVariant 能转的基本类型
+- Bridge 是否挂靠在 MainWindow（不要让其随 WebPage 销毁）
 
 ### 5. **复杂参数（对象/数组）导致 JS 不接收**
 支持：
@@ -265,8 +266,8 @@ bridge.messageChanged.connect(function (obj) {
 
 QWebChannel 是 Qt WebEngine 中最可靠、最强大的前后端通信方式，但需要注意：
 
-✔ Bridge 必须在主线程
-✔ JS 必须在初始化回调后才能使用对象
-✔ 参数使用 QVariant 可序列化
-✔ 页面刷新后必须重新 setWebChannel
-✔ 跨线程调用需谨慎（信号转发）
+- Bridge 必须在主线程
+-  JS 必须在初始化回调后才能使用对象
+-  参数使用 QVariant 可序列化
+- 页面刷新后必须重新 setWebChannel
+-  跨线程调用需谨慎（信号转发）
